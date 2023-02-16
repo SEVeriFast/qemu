@@ -772,6 +772,7 @@ sev_launch_update_data(SevGuestState *sev, uint8_t *addr, uint64_t len)
     trace_kvm_sev_launch_update_data(addr, len);
     ret = sev_ioctl(sev->sev_fd, KVM_SEV_LAUNCH_UPDATE_DATA,
                     &update, &fw_error);
+    trace_kvm_sev_launch_update_data(addr, len);
     if (ret) {
         error_report("%s: LAUNCH_UPDATE ret=%d fw_error=%d '%s'",
                 __func__, ret, fw_error, fw_error_to_str(fw_error));
