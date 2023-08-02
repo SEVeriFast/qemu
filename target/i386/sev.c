@@ -1271,6 +1271,10 @@ sev_snp_launch_update(SevSnpGuestState *sev_snp_guest, SevLaunchUpdateData *data
         memcpy(&snp_cpuid_info, data->hva, sizeof(snp_cpuid_info));
     }
 
+    if (data->type == KVM_SEV_SNP_PAGE_TYPE_SECRETS) {
+        error_report("SNP_LAUNCH_UPDATE SECRETS PAGE: addr=%lx, len=%d", data->gpa, data->type);
+    }
+
     update.uaddr = (__u64)(unsigned long)data->hva;
     update.start_gfn = data->gpa >> TARGET_PAGE_BITS;
     update.len = data->len;
@@ -2313,6 +2317,25 @@ static int kvm_handle_vmgexit_msr_protocol(__u64 *ghcb_msr)
     }
 
     op = (*ghcb_msr & GHCB_MSR_PSC_OP_MASK) >> GHCB_MSR_PSC_OP_POS;
+
+    if(*ghcb_msr == 0x0020000000000014){
+        //bcwh this is here to signal the entry point for ovmf
+        trace_kvm_vmgexit_psc_msr_proto(0, 0, 2);
+        goto debug;
+    }
+
+    if(*ghcb_msr == 0x0030000000000014){
+        //bcwh this is here to signal the entry point for bzimage
+        trace_kvm_vmgexit_psc_msr_proto(0, 0, 3);
+        goto debug;
+    }
+
+    if(*ghcb_msr == 0x0040000000000014){
+        //bcwh this is here to signal the entry point for linux kernel
+        trace_kvm_vmgexit_psc_msr_proto(0, 0, 4);
+        goto debug;
+    }
+
     gfn = (*ghcb_msr & GHCB_MSR_PSC_GFN_MASK) >> GHCB_MSR_PSC_GFN_POS;
 
     trace_kvm_vmgexit_psc_msr_proto(gfn, 0x1000, op == GHCB_MSR_PSC_OP_PRIVATE);
@@ -2327,7 +2350,7 @@ static int kvm_handle_vmgexit_msr_protocol(__u64 *ghcb_msr)
 
     *ghcb_msr &= ~GHCB_MSR_INFO_MASK;
     *ghcb_msr |= GHCB_MSR_PSC_RESP;
-
+debug:
     return 0;
 }
 
