@@ -1635,12 +1635,14 @@ sev_snp_launch_finish(SevSnpGuestState *sev_snp)
     /* Populate all the metadata pages */
     snp_populate_metadata_pages(sev_snp, metadata);
 
+    trace_kvm_sev_snp_measure_regions_start();
     QTAILQ_FOREACH(data, &launch_update, next) {
         ret = sev_snp_launch_update(sev_snp, data);
         if (ret) {
             exit(1);
         }
     }
+    trace_kvm_sev_snp_measure_regions_done();
 
     trace_kvm_sev_snp_launch_finish(sev_snp->id_block, sev_snp->id_auth,
                                     sev_snp->host_data);
@@ -2129,11 +2131,13 @@ static bool build_kernel_loader_hashes(PaddedSevHashTable *padded_ht,
      * Calculate hash of initrd. If the user doesn't supply an initrd via
      * -initrd, an empty buffer will be used (ctx->initrd_size == 0).
      */
+    trace_kvm_sev_hash_initrd_start();
     hashp = initrd_hash;
     if (qcrypto_hash_bytes(QCRYPTO_HASH_ALG_SHA256, ctx->initrd_data,
                            ctx->initrd_size, &hashp, &hash_len, errp) < 0) {
         return false;
     }
+    trace_kvm_sev_hash_initrd_done();
     assert(hash_len == HASH_SIZE);
 
     /* Calculate hash of the kernel */
@@ -2142,10 +2146,12 @@ static bool build_kernel_loader_hashes(PaddedSevHashTable *padded_ht,
         { .iov_base = ctx->setup_data, .iov_len = ctx->setup_size },
         { .iov_base = ctx->kernel_data, .iov_len = ctx->kernel_size }
     };
+    trace_kvm_sev_hash_kernel_start();
     if (qcrypto_hash_bytesv(QCRYPTO_HASH_ALG_SHA256, iov, ARRAY_SIZE(iov),
                             &hashp, &hash_len, errp) < 0) {
         return false;
     }
+    trace_kvm_sev_hash_kernel_done();
     assert(hash_len == HASH_SIZE);
 
     ht = &padded_ht->ht;
